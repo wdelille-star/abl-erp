@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ABL ERP - Gestion RH & Payroll</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family: Arial; margin:0; background:#f4f4f4; }
+header { background:#007BFF; color:#fff; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
+header h1 { margin:0; font-size:1.5rem; }
+nav { display:none; background:#f8f8f8; padding:1rem; position:fixed; top:0; left:0; height:100%; width:220px; overflow:auto; box-shadow:2px 0 5px rgba(0,0,0,0.1); }
+nav a { display:block; padding:0.5rem; color:#333; text-decoration:none; margin-bottom:0.3rem; border-radius:4px; }
+nav a:hover { background:#007BFF; color:#fff; }
+main { padding:1rem; max-width:1400px; margin:auto; margin-left:0; transition:margin-left 0.3s; }
+.auth, .form, .filters, .dashboard, .pagination, #payroll-module { background:#fff; padding:1rem; margin:1rem 0; border-radius:8px; box-shadow:0 0 8px #ccc; }
+input, select, button { padding:8px; margin:4px; border-radius:4px; border:1px solid #ccc; }
+button { cursor:pointer; }
+button.save { background:#007BFF; color:#fff; }
+button.reset { background:#f8d7da; color:#721c24; }
+table { width:100%; border-collapse:collapse; margin-top:1rem; }
+th, td { border:1px solid #ddd; padding:8px; text-align:left; }
+th { background:#007BFF; color:white; cursor:pointer; }
+tr.selected { background:#d4f7d4 !important; }
+canvas { max-width:100%; height:200px; }
+#console { white-space:pre-wrap; font-family:monospace; background:#000; color:#0f0; padding:1rem; margin-top:1rem; max-height:200px; overflow:auto; }
+#loader { display:none; text-align:center; padding:1rem; }
+.grid { display:grid; grid-template-columns:1fr 2fr; gap:1rem; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>ABL ERP - Gestion RH & Payroll</h1>
+<button id="menu-toggle">☰ Menu</button>
+</header>
+
+<nav id="sidebar">
+<a href="#form-profiles">📋 Profils</a>
+<a href="#payroll-module">💰 Payroll</a>
+<a href="#dashboard">📈 Tableau de bord</a>
+<a href="#console">🖥 Console</a>
+<button onclick="logout()">🔓 Déconnexion</button>
+</nav>
+
+<main>
+<div class="auth">
+<h2>Connexion - ABL</h2>
+<input type="email" id="email" placeholder="E-mail" />
+<input type="password" id="password" placeholder="Mot de passe" />
+<button onclick="login()">Se connecter</button>
+</div>
+
+<div id="app" style="display:none;">
+<!-- Form Profil -->
+<div class="form" id="form-profiles">
+<h3>Ajouter / Modifier un profil</h3>
+<input type="hidden" id="profile_id" />
+<input id="full_name" placeholder="Nom complet" />
+<input id="user_email" placeholder="Email" />
+<input id="telephone" placeholder="Téléphone" />
+<input id="role" placeholder="Rôle (ex: Back Office, Livreur)" />
+<input id="poste" placeholder="Poste" />
+<input id="affectation" placeholder="Affectation" />
+<input id="salaire" type="number" placeholder="Salaire fixe (Back Office)" />
+<br />
+<button class="save" onclick="submitForm()">Enregistrer</button>
+<button type="button" class="reset" onclick="resetForm()">Réinitialiser</button>
+<button type="button" onclick="newProfile()">➕ Nouveau profil</button>
+<button type="button" onclick="duplicateSelectedProfile()">📄 Dupliquer</button>
+</div>
+
+<!-- Filtres -->
+<div class="filters">
+<h3>🔍 Recherche & Filtres</h3>
+<input id="search" placeholder="Recherche..." />
+<select id="filter-role"><option value="">Rôle</option></select>
+<select id="filter-poste"><option value="">Poste</option></select>
+<input type="date" id="filter-date" />
+<button onclick="exportCSV()">📤 Export CSV</button>
+</div>
+
+<!-- Tableau de bord + Liste -->
+<div class="grid">
+<div class="dashboard" id="dashboard">
+<h3>📈 Tableau de bord</h3>
+<canvas id="chartRoles"></canvas>
+<canvas id="chartPostes"></canvas>
+</div>
+
+<div class="pagination">
+<h3>📊 Liste des profils</h3>
+<div id="loader">⏳ Chargement...</div>
+<table id="profile-table">
+<thead>
+<tr>
+<th onclick="sortBy('full_name')">Nom</th>
+<th onclick="sortBy('email')">Email</th>
+<th onclick="sortBy('role')">Rôle</th>
+<th onclick="sortBy('poste')">Poste</th>
+<th onclick="sortBy('salaire')">Salaire</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<div id="pagination-controls"></div>
+</div>
+</div>
+
+<!-- Payroll Module -->
+<div class="form" id="payroll-module">
+<h3>Module Payroll</h3>
+<select id="employee-select"></select>
+<input type="number" id="deliveries" placeholder="Nombre de livraisons (pour Livreur)" />
+<input type="number" id="rate" placeholder="Taux par livraison" />
+<button id="compute-payroll">Calculer</button>
+<button id="save-payroll">💾 Enregistrer Payroll</button>
+<p id="payroll-result"></p>
+</div>
+
+<div id="console">Console :&#10;</div>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+// --- Supabase ---
+const supabaseUrl = "https://dfjiosdalckuvhpukkjc.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmamlvc2RhbGNrdXZocHVra2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NzM5NjAsImV4cCI6MjA2MTQ0OTk2MH0.IDxxMQl7gB6b9cKtga7JX6Pr2PyLfQjk3Pg8HMVMU_8";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// --- Variables ---
+let profiles = [];
+let currentPage = 1;
+const perPage = 10;
+let currentSortField = null;
+let chartRole=null, chartPoste=null;
+
+// --- IndexedDB for offline ---
+let db;
+const request = indexedDB.open("ABL_ERP_DB",1);
+request.onupgradeneeded = e => {
+  db = e.target.result;
+  if(!db.objectStoreNames.contains("profiles")) db.createObjectStore("profiles",{keyPath:"id"});
+};
+request.onsuccess = e => { db=e.target.result; preloadOfflineProfiles(); };
+request.onerror = e => console.log("IndexedDB Error:",e);
+
+function saveOffline(profile){
+  const tx=db.transaction("profiles","readwrite");
+  tx.objectStore("profiles").put(profile);
+}
+function loadOfflineProfiles(callback){
+  const tx=db.transaction("profiles","readonly");
+  const store=tx.objectStore("profiles");
+  const all = store.getAll();
+  all.onsuccess = ()=>{ profiles=all.result; callback(); };
+}
+
+// --- Logger ---
+const log = msg => { const box=document.getElementById("console"); box.innerHTML+="\n> "+msg; box.scrollTop=box.scrollHeight; };
+
+// --- Menu toggle ---
+document.getElementById("menu-toggle").onclick=()=>{
+  const nav=document.getElementById("sidebar");
+  const main=document.querySelector("main");
+  if(nav.style.display==="block"){ nav.style.display="none"; main.style.marginLeft="0"; } else { nav.style.display="block"; main.style.marginLeft="220px"; }
+};
+
+// --- Auth ---
+window.login = async function(){
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  const { error } = await supabase.auth.signInWithPassword({ email,password });
+  if(error) return alert(error.message);
+  document.querySelector(".auth").style.display="none";
+  document.getElementById("app").style.display="block";
+  await loadProfiles();
+};
+window.logout = async function(){ await supabase.auth.signOut(); location.reload(); };
+
+// --- Form Profil ---
+window.submitForm = async function(){
+  const id=document.getElementById("profile_id").value || Date.now();
+  const data={
+    id,
+    full_name:document.getElementById("full_name").value,
+    email:document.getElementById("user_email").value,
+    telephone:document.getElementById("telephone").value,
+    role:document.getElementById("role").value,
+    poste:document.getElementById("poste").value,
+    affectation:document.getElementById("affectation").value,
+    salaire:parseFloat(document.getElementById("salaire").value)||0,
+    created_at:new Date().toISOString()
+  };
+  // Save offline
+  saveOffline(data);
+  // Save online
+  try{ await supabase.from("profiles").upsert([data]); log("✅ Profil enregistré online et offline"); }
+  catch(e){ log("❌ Erreur online: "+e.message); }
+  resetForm();
+  renderProfiles();
+};
+window.resetForm = function(){
+  ["profile_id","full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value="");
+  document.querySelectorAll("#profile-table tr").forEach(tr=>tr.classList.remove("selected"));
+  log("🧹 Formulaire réinitialisé");
+};
+window.newProfile=function(){ resetForm(); log("➕ Nouveau profil prêt à saisir"); };
+window.duplicateSelectedProfile=function(){
+  const id=document.getElementById("profile_id").value;
+  if(!id) return alert("Sélectionnez un profil à dupliquer !");
+  const row=profiles.find(p=>p.id==id); if(!row) return;
+  document.getElementById("profile_id").value="";
+  ["full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value=row[f]);
+  log("📄 Profil dupliqué prêt à enregistrer");
+};
+window.editProfile=function(row){
+  document.getElementById("profile_id").value=row.id;
+  ["full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value=row[f]);
+  highlightRow(row.id);
+  log("✏️ Édition : "+row.full_name);
+};
+window.deleteProfile=function(id){
+  if(confirm("Confirmer la suppression ?")){
+    // Offline delete
+    const tx=db.transaction("profiles","readwrite");
+    tx.objectStore("profiles").delete(id);
+    // Online delete
+    supabase.from("profiles").delete().eq("id",id).then(()=>log("🗑️ Profil supprimé online"));
+    profiles=profiles.filter(p=>p.id!=id);
+    renderProfiles();
+  }
+};
+function highlightRow(id){ document.querySelectorAll("#profile-table tr").forEach(tr=>tr.classList.remove("selected")); const tr=document.getElementById("row-"+id); if(tr) tr.classList.add("selected"); }
+function showLoader(show=true){ document.getElementById("loader").style.display=show?"block":"none"; }
+
+// --- CSV ---
+window.exportCSV=function(){
+  const rows=[["Nom","Email","Rôle","Poste","Affectation","Salaire"]].concat(profiles.map(p=>[p.full_name,p.email,p.role,p.poste,p.affectation,p.salaire]));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="profiles.csv";
+  a.click(); URL.revokeObjectURL(url);
+};
+
+// --- Sort / Filter / Pagination ---
+function sortBy(field){ currentSortField=field; profiles.sort((a,b)=> (a[field]||"").toString().localeCompare((b[field]||"").toString())); renderProfiles(); }
+function getFilteredProfiles(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const role=document.getElementById("filter-role").value.toLowerCase();
+  const poste=document.getElementById("filter-poste").value.toLowerCase();
+  return profiles.filter(p=> (!search||(p.full_name+p.email).toLowerCase().includes(search)) && (!role||p.role?.toLowerCase().includes(role)) && (!poste||p.poste?.toLowerCase().includes(poste)) );
+}
+function paginate(array,page=1,perPage=10){ return array.slice((page-1)*perPage,page*perPage); }
+function renderProfiles(){
+  showLoader(true);
+  setTimeout(()=>{
+    const tbody=document.querySelector("#profile-table tbody");
+    tbody.innerHTML="";
+    const filtered=getFilteredProfiles();
+    const paged=paginate(filtered,currentPage,perPage);
+    paged.forEach(row=>{
+      const tr=document.createElement("tr");
+      tr.id="row-"+row.id;
+      tr.onclick=()=>editProfile(row);
+      tr.innerHTML=`<td>${row.full_name}</td><td>${row.email}</td><td>${row.role}</td><td>${row.poste}</td><td>${row.salaire}</td>
+      <td><button onclick='event.stopPropagation(); editProfile(${JSON.stringify(row)})'>✏️</button>
+      <button onclick='event.stopPropagation(); deleteProfile("${row.id}")'>🗑️</button></td>`;
+      tbody.appendChild(tr);
+    });
+    renderPagination(filtered.length);
+    renderCharts();
+    fillEmployeeSelect();
+    showLoader(false);
+  },100);
+}
+function renderPagination(total){
+  const controls=document.getElementById("pagination-controls");
+  controls.innerHTML="";
+  const totalPages=Math.ceil(total/perPage);
+  for(let i=1;i<=totalPages;i++){
+    const btn=document.createElement("button");
+    btn.innerText=i;
+    if(i===currentPage) btn.style.fontWeight="bold";
+    btn.onclick=()=>{ currentPage=i; renderProfiles(); };
+    controls.appendChild(btn);
+  }
+}
+
+// --- Charts ---
+function renderCharts(){
+  const ctx1=document.getElementById("chartRoles").getContext("2d");
+  const ctx2=document.getElementById("chartPostes").getContext("2d");
+  const roles={}, postes={};
+  profiles.forEach(p=>{ roles[p.role]=(roles[p.role]||0)+1; postes[p.poste]=(postes[p.poste]||0)+1; });
+  if(chartRole) chartRole.destroy();
+  if(chartPoste) chartPoste.destroy();
+  chartRole=new Chart(ctx1,{type:"bar",data:{labels:Object.keys(roles),datasets:[{label:"Par rôle",data:Object.values(roles),backgroundColor:"#007BFF"}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+  chartPoste=new Chart(ctx2,{type:"pie",data:{labels:Object.keys(postes),datasets:[{label:"Par poste",data:Object.values(postes),backgroundColor:["#f44336","#4caf50","#2196f3","#ff9800"]}]} ,options:{responsive:true}});
+}
+
+// --- Load profiles offline/online ---
+function preloadOfflineProfiles(){
+  loadOfflineProfiles(()=>{
+    if(profiles.length===0){
+      // 10 profils test initial offline
+      const initialProfiles=[
+        {id:1, full_name:"Jean Dupont", email:"jean.dupont@mail.com", telephone:"50912345678", role:"Back Office", poste:"Analyste", affectation:"Port-au-Prince", salaire:500, created_at:new Date().toISOString()},
+        {id:2, full_name:"Marie Bernard", email:"marie.bernard@mail.com", telephone:"50923456789", role:"Livreur", poste:"Chauffeur", affectation:"Cap-Haïtien", salaire:0, created_at:new Date().toISOString()},
+        {id:3, full_name:"Pierre Louis", email:"pierre.louis@mail.com", telephone:"50934567890", role:"Back Office", poste:"Comptable", affectation:"Port-au-Prince", salaire:600, created_at:new Date().toISOString()},
+        {id:4, full_name:"Sophie Jean", email:"sophie.jean@mail.com", telephone:"50945678901", role:"Livreur", poste:"Chauffeur", affectation:"Gonaïves", salaire:0, created_at:new Date().toISOString()},
+        {id:5, full_name:"Marc Toussaint", email:"marc.toussaint@mail.com", telephone:"50956789012", role:"Back Office", poste:"Assistant RH", affectation:"Port-au-Prince", salaire:550, created_at:new Date().toISOString()},
+        {id:6, full_name:"Isabelle Michel", email:"isabelle.michel@mail.com", telephone:"50967890123", role:"Livreur", poste:"Chauffeur", affectation:"Jacmel", salaire:0, created_at:new Date().toISOString()},
+        {id:7, full_name:"Louis Charles", email:"louis.charles@mail.com", telephone:"50978901234", role:"Back Office", poste:"Gestionnaire", affectation:"Port-au-Prince", salaire:700, created_at:new Date().toISOString()},
+        {id:8, full_name:"Caroline Pierre", email:"caroline.pierre@mail.com", telephone:"50989012345", role:"Livreur", poste:"Chauffeur", affectation:"Les Cayes", salaire:0, created_at:new Date().toISOString()},
+        {id:9, full_name:"Jean-Paul René", email:"jp.rene@mail.com", telephone:"50990123456", role:"Back Office", poste:"Analyste", affectation:"Port-au-Prince", salaire:500, created_at:new Date().toISOString()},
+        {id:10, full_name:"Emilie François", email:"emilie.francois@mail.com", telephone:"50901234567", role:"Livreur", poste:"Chauffeur", affectation:"Cap-Haïtien", salaire:0, created_at:new Date().toISOString()}
+      ];
+      initialProfiles.forEach(p=>saveOffline(p));
+      profiles=initialProfiles;
+    }
+    renderProfiles();
+  });
+}
+async function loadProfiles(){ preloadOfflineProfiles(); }
+
+// --- Fill filters ---
+function fillEmployeeSelect(){
+  const select=document.getElementById("employee-select");
+  select.innerHTML="";
+  profiles.forEach(p=>{ const opt=document.createElement("option"); opt.value=p.id; opt.text=p.full_name; select.appendChild(opt); });
+}
+
+// --- Payroll ---
+document.getElementById("compute-payroll").onclick=()=>{
+  const sel=document.getElementById("employee-select");
+  const p=profiles.find(x=>x.id==sel.value);
+  if(!p) return alert("Sélectionnez un employé");
+  let total=0;
+  if(p.role==="Livreur"){ const deliveries=parseFloat(document.getElementById("deliveries").value)||0; const rate=parseFloat(document.getElementById("rate").value)||0; total=deliveries*rate; }
+  else total=p.salaire;
+  document.getElementById("payroll-result").innerText="Salaire calculé : "+total;
+};
+document.getElementById("save-payroll").onclick=()=>{
+  const sel=document.getElementById("employee-select");
+  const p=profiles.find(x=>x.id==sel.value);
+  if(!p) return;
+  alert("Payroll enregistré (simulé) pour "+p.full_name);
+};
+</script>
+</body>
+</html>
