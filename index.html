@@ -112,7 +112,7 @@ function renderPublicProfiles(){const container=$('profiles-list');container.inn
 function renderPagination(){const pages=Math.ceil(publicProfiles.length/perPage);const p=$('pagination');p.innerHTML='';for(let i=1;i<=pages;i++){const b=document.createElement('button');b.className='page-btn'+(i===currentPage?' active':'');b.textContent=i;b.onclick=()=>paginateProfiles(i);p.appendChild(b);}}
 function renderChart(){const map={};publicProfiles.forEach(p=>{map[p.role]=(map[p.role]||0)+1;});const labels=Object.keys(map);const values=Object.values(map);const ctx=document.getElementById('chartRoles').getContext('2d');if(window.roleChart)window.roleChart.destroy();window.roleChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Nombre par rôle',data:values,borderWidth:1,backgroundColor:'#0a74da'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});}
 async function sendContact(){const name=$('contactName').value.trim(),email=$('contactEmail').value.trim(),message=$('contactMessage').value.trim();if(!name||!message)return alert('Nom et message requis');const{error}=await supabase.from('contacts').insert([{name,email,message,created_at:new Date().toISOString()}]);if(error){alert('Erreur d\'envoi');}else{alert('Message envoyé !');$('contactForm').reset();}}
-$('open-login').addEventListener('click',()=>{window.location.href='admin.html';});
+$('open-login').addEventListener('click',()=>{window.location.href='index.html';});
 window.addEventListener('load',()=>loadPublicProfiles());
 </script>
 </body>
