@@ -1,355 +1,119 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>ABL ERP - Gestion RH & Payroll</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8" />
+<title>ANBELI — Présentation améliorée</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.css">
 <style>
-body { font-family: Arial; margin:0; background:#f4f4f4; }
-header { background:#007BFF; color:#fff; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
-header h1 { margin:0; font-size:1.5rem; }
-nav { display:none; background:#f8f8f8; padding:1rem; position:fixed; top:0; left:0; height:100%; width:220px; overflow:auto; box-shadow:2px 0 5px rgba(0,0,0,0.1); }
-nav a { display:block; padding:0.5rem; color:#333; text-decoration:none; margin-bottom:0.3rem; border-radius:4px; }
-nav a:hover { background:#007BFF; color:#fff; }
-main { padding:1rem; max-width:1400px; margin:auto; margin-left:0; transition:margin-left 0.3s; }
-.auth, .form, .filters, .dashboard, .pagination, #payroll-module { background:#fff; padding:1rem; margin:1rem 0; border-radius:8px; box-shadow:0 0 8px #ccc; }
-input, select, button { padding:8px; margin:4px; border-radius:4px; border:1px solid #ccc; }
-button { cursor:pointer; }
-button.save { background:#007BFF; color:#fff; }
-button.reset { background:#f8d7da; color:#721c24; }
-table { width:100%; border-collapse:collapse; margin-top:1rem; }
-th, td { border:1px solid #ddd; padding:8px; text-align:left; }
-th { background:#007BFF; color:white; cursor:pointer; }
-tr.selected { background:#d4f7d4 !important; }
-canvas { max-width:100%; height:200px; }
-#console { white-space:pre-wrap; font-family:monospace; background:#000; color:#0f0; padding:1rem; margin-top:1rem; max-height:200px; overflow:auto; }
-#loader { display:none; text-align:center; padding:1rem; }
-.grid { display:grid; grid-template-columns:1fr 2fr; gap:1rem; }
+:root{--primary:#0a74da;--secondary:#00bfa6;--muted:#f9fafb;--card:#fff;--text:#222}
+body{font-family:Inter, Arial, sans-serif;margin:0;background:var(--muted);color:var(--text);scroll-behavior:smooth}
+header{background:linear-gradient(90deg,var(--primary),var(--secondary));color:#fff;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header-brand{display:flex;align-items:center;gap:.75rem;animation:fadeIn .8s ease-in-out}
+.logo{width:44px;height:44px;border-radius:50%;background:#fff;color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;box-shadow:0 0 8px rgba(255,255,255,.3)}
+nav a{color:rgba(255,255,255,.95);text-decoration:none;margin-left:1.2rem;transition:.3s}
+nav a:hover{color:#fff;text-decoration:underline}
+.hero{max-width:1200px;margin:2rem auto;padding:1.5rem;display:grid;grid-template-columns:1fr 420px;gap:1.5rem;align-items:center}
+.card{background:var(--card);padding:1rem;border-radius:14px;box-shadow:0 6px 18px rgba(10,10,20,.06);transition:transform .2s}
+.card:hover{transform:translateY(-3px)}
+.hero h1{margin:0 0 .5rem;font-size:2rem;color:var(--primary)}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+.feature{padding:1rem;border-radius:10px;background:#fff;border:1px solid #eef;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.5rem}
+.feature i{font-size:1.6rem;color:var(--secondary)}
+.profiles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.footer{padding:1rem;background:#0f1724;color:#fff;margin-top:2rem;text-align:center}
+.btn{background:var(--primary);color:#fff;padding:.6rem 1rem;border-radius:8px;border:none;cursor:pointer;transition:.3s}
+.btn:hover{background:var(--secondary)}
+.small{font-size:.9rem;color:#666}
+.searchbar{display:flex;gap:.5rem}
+.pagination{display:flex;justify-content:center;gap:.5rem;margin-top:1rem}
+.page-btn{border:1px solid #ddd;padding:.4rem .8rem;border-radius:6px;background:#fff;cursor:pointer;transition:.3s}
+.page-btn.active{background:var(--primary);color:#fff}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){.hero{grid-template-columns:1fr;}.features{grid-template-columns:1fr 1fr}.header-brand h2{display:none}}
 </style>
 </head>
 <body>
-
 <header>
-<h1>ABL ERP - Gestion RH & Payroll</h1>
-<button id="menu-toggle">☰ Menu</button>
+  <div class="header-brand">
+    <div class="logo">A</div>
+    <div>
+      <h2 style="margin:0;font-size:1.1rem">ANBELI</h2>
+      <div class="small">Gestion RH & Présentation publique</div>
+    </div>
+  </div>
+  <nav>
+    <a href="#profiles"><i class="lucide-users"></i> Profils</a>
+    <a href="#dashboard"><i class="lucide-bar-chart-2"></i> Tableau</a>
+    <a href="#contact"><i class="lucide-mail"></i> Contact</a>
+    <a href="#admin" id="admin-link"><i class="lucide-lock"></i> Connexion</a>
+  </nav>
 </header>
 
-<nav id="sidebar">
-<a href="#form-profiles">📋 Profils</a>
-<a href="#payroll-module">💰 Payroll</a>
-<a href="#dashboard">📈 Tableau de bord</a>
-<a href="#console">🖥 Console</a>
-<button onclick="logout()">🔓 Déconnexion</button>
-</nav>
-
 <main>
-<div class="auth">
-<h2>Connexion - ABL</h2>
-<input type="email" id="email" placeholder="E-mail" />
-<input type="password" id="password" placeholder="Mot de passe" />
-<button onclick="login()">Se connecter</button>
-</div>
+  <section class="hero">
+    <div>
+      <div class="card">
+        <h1><i class="lucide-briefcase"></i> Vue publique du système ANBELI</h1>
+        <p class="small">Découvrez la vitrine de notre solution RH. Consultez les profils, visualisez des graphiques et contactez-nous. L’administration complète reste sécurisée.</p>
+        <div class="features">
+          <div class="feature"><i class="lucide-users"></i><strong>Profils publics</strong><div class="small">Liste en lecture seule pour visiteurs.</div></div>
+          <div class="feature"><i class="lucide-pie-chart"></i><strong>Statistiques</strong><div class="small">Graphiques dynamiques par rôle & poste.</div></div>
+          <div class="feature"><i class="lucide-mail"></i><strong>Contact rapide</strong><div class="small">Formulaire simple et intuitif.</div></div>
+        </div>
+      </div>
 
-<div id="app" style="display:none;">
-<!-- Form Profil -->
-<div class="form" id="form-profiles">
-<h3>Ajouter / Modifier un profil</h3>
-<input type="hidden" id="profile_id" />
-<input id="full_name" placeholder="Nom complet" />
-<input id="user_email" placeholder="Email" />
-<input id="telephone" placeholder="Téléphone" />
-<input id="role" placeholder="Rôle (ex: Back Office, Livreur)" />
-<input id="poste" placeholder="Poste" />
-<input id="affectation" placeholder="Affectation" />
-<input id="salaire" type="number" placeholder="Salaire fixe (Back Office)" />
-<br />
-<button class="save" onclick="submitForm()">Enregistrer</button>
-<button type="button" class="reset" onclick="resetForm()">Réinitialiser</button>
-<button type="button" onclick="newProfile()">➕ Nouveau profil</button>
-<button type="button" onclick="duplicateSelectedProfile()">📄 Dupliquer</button>
-</div>
+      <div id="profiles" class="card" style="margin-top:1rem">
+        <h3><i class="lucide-users"></i> Profils de l'équipe</h3>
+        <div class="searchbar" style="margin:.5rem 0">
+          <input id="searchPublic" placeholder="Rechercher un nom ou poste" style="flex:1;padding:.6rem;border-radius:8px;border:1px solid #ddd" />
+          <button class="btn" onclick="loadPublicProfiles()"><i class="lucide-search"></i> Rechercher</button>
+        </div>
+        <div id="profiles-list" class="profiles-grid"></div>
+        <div class="pagination" id="pagination"></div>
+        <p class="small" style="margin-top:.75rem">Les informations sensibles restent masquées.</p>
+      </div>
+    </div>
 
-<!-- Filtres -->
-<div class="filters">
-<h3>🔍 Recherche & Filtres</h3>
-<input id="search" placeholder="Recherche..." />
-<select id="filter-role"><option value="">Rôle</option></select>
-<select id="filter-poste"><option value="">Poste</option></select>
-<input type="date" id="filter-date" />
-<button onclick="exportCSV()">📤 Export CSV</button>
-</div>
+    <aside>
+      <div class="card">
+        <h3><i class="lucide-bar-chart-2"></i> Statistiques</h3>
+        <canvas id="chartRoles" style="width:100%;height:220px"></canvas>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <h4><i class="lucide-mail"></i> Contact</h4>
+        <form id="contactForm">
+          <input type="text" id="contactName" placeholder="Votre nom" style="width:100%;padding:.5rem;margin:.25rem 0;border-radius:6px;border:1px solid #ddd" />
+          <input type="email" id="contactEmail" placeholder="E-mail" style="width:100%;padding:.5rem;margin:.25rem 0;border-radius:6px;border:1px solid #ddd" />
+          <textarea id="contactMessage" placeholder="Message" style="width:100%;height:80px;padding:.5rem;border-radius:6px;border:1px solid #ddd"></textarea>
+          <button type="button" class="btn" onclick="sendContact()"><i class="lucide-send"></i> Envoyer</button>
+        </form>
+      </div>
+      <div class="card" style="margin-top:1rem;text-align:center">
+        <h4><i class="lucide-lock"></i> Administration</h4>
+        <button class="btn" id="open-login">Se connecter (Admin)</button>
+      </div>
+    </aside>
+  </section>
+</main>
 
-<!-- Tableau de bord + Liste -->
-<div class="grid">
-<div class="dashboard" id="dashboard">
-<h3>📈 Tableau de bord</h3>
-<canvas id="chartRoles"></canvas>
-<canvas id="chartPostes"></canvas>
-</div>
+<footer class="footer">© ANBELI — Présentation publique | Backend sécurisé Supabase</footer>
 
-<div class="pagination">
-<h3>📊 Liste des profils</h3>
-<div id="loader">⏳ Chargement...</div>
-<table id="profile-table">
-<thead>
-<tr>
-<th onclick="sortBy('full_name')">Nom</th>
-<th onclick="sortBy('email')">Email</th>
-<th onclick="sortBy('role')">Rôle</th>
-<th onclick="sortBy('poste')">Poste</th>
-<th onclick="sortBy('salaire')">Salaire</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-<div id="pagination-controls"></div>
-</div>
-</div>
-
-<!-- Payroll Module -->
-<div class="form" id="payroll-module">
-<h3>Module Payroll</h3>
-<select id="employee-select"></select>
-<input type="number" id="deliveries" placeholder="Nombre de livraisons (pour Livreur)" />
-<input type="number" id="rate" placeholder="Taux par livraison" />
-<button id="compute-payroll">Calculer</button>
-<button id="save-payroll">💾 Enregistrer Payroll</button>
-<p id="payroll-result"></p>
-</div>
-
-<div id="console">Console :&#10;</div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-// --- Supabase ---
 const supabaseUrl = "https://dfjiosdalckuvhpukkjc.supabase.co";
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmamlvc2RhbGNrdXZocHVra2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NzM5NjAsImV4cCI6MjA2MTQ0OTk2MH0.IDxxMQl7gB6b9cKtga7JX6Pr2PyLfQjk3Pg8HMVMU_8";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// --- Variables ---
-let profiles = [];
-let currentPage = 1;
-const perPage = 10;
-let currentSortField = null;
-let chartRole=null, chartPoste=null;
-
-// --- IndexedDB for offline ---
-let db;
-const request = indexedDB.open("ABL_ERP_DB",1);
-request.onupgradeneeded = e => {
-  db = e.target.result;
-  if(!db.objectStoreNames.contains("profiles")) db.createObjectStore("profiles",{keyPath:"id"});
-};
-request.onsuccess = e => { db=e.target.result; preloadOfflineProfiles(); };
-request.onerror = e => console.log("IndexedDB Error:",e);
-
-function saveOffline(profile){
-  const tx=db.transaction("profiles","readwrite");
-  tx.objectStore("profiles").put(profile);
-}
-function loadOfflineProfiles(callback){
-  const tx=db.transaction("profiles","readonly");
-  const store=tx.objectStore("profiles");
-  const all = store.getAll();
-  all.onsuccess = ()=>{ profiles=all.result; callback(); };
-}
-
-// --- Logger ---
-const log = msg => { const box=document.getElementById("console"); box.innerHTML+="\n> "+msg; box.scrollTop=box.scrollHeight; };
-
-// --- Menu toggle ---
-document.getElementById("menu-toggle").onclick=()=>{
-  const nav=document.getElementById("sidebar");
-  const main=document.querySelector("main");
-  if(nav.style.display==="block"){ nav.style.display="none"; main.style.marginLeft="0"; } else { nav.style.display="block"; main.style.marginLeft="220px"; }
-};
-
-// --- Auth ---
-window.login = async function(){
-  const email=document.getElementById("email").value;
-  const password=document.getElementById("password").value;
-  const { error } = await supabase.auth.signInWithPassword({ email,password });
-  if(error) return alert(error.message);
-  document.querySelector(".auth").style.display="none";
-  document.getElementById("app").style.display="block";
-  await loadProfiles();
-};
-window.logout = async function(){ await supabase.auth.signOut(); location.reload(); };
-
-// --- Form Profil ---
-window.submitForm = async function(){
-  const id=document.getElementById("profile_id").value || Date.now();
-  const data={
-    id,
-    full_name:document.getElementById("full_name").value,
-    email:document.getElementById("user_email").value,
-    telephone:document.getElementById("telephone").value,
-    role:document.getElementById("role").value,
-    poste:document.getElementById("poste").value,
-    affectation:document.getElementById("affectation").value,
-    salaire:parseFloat(document.getElementById("salaire").value)||0,
-    created_at:new Date().toISOString()
-  };
-  // Save offline
-  saveOffline(data);
-  // Save online
-  try{ await supabase.from("profiles").upsert([data]); log("✅ Profil enregistré online et offline"); }
-  catch(e){ log("❌ Erreur online: "+e.message); }
-  resetForm();
-  renderProfiles();
-};
-window.resetForm = function(){
-  ["profile_id","full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value="");
-  document.querySelectorAll("#profile-table tr").forEach(tr=>tr.classList.remove("selected"));
-  log("🧹 Formulaire réinitialisé");
-};
-window.newProfile=function(){ resetForm(); log("➕ Nouveau profil prêt à saisir"); };
-window.duplicateSelectedProfile=function(){
-  const id=document.getElementById("profile_id").value;
-  if(!id) return alert("Sélectionnez un profil à dupliquer !");
-  const row=profiles.find(p=>p.id==id); if(!row) return;
-  document.getElementById("profile_id").value="";
-  ["full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value=row[f]);
-  log("📄 Profil dupliqué prêt à enregistrer");
-};
-window.editProfile=function(row){
-  document.getElementById("profile_id").value=row.id;
-  ["full_name","user_email","telephone","role","poste","affectation","salaire"].forEach(f=>document.getElementById(f).value=row[f]);
-  highlightRow(row.id);
-  log("✏️ Édition : "+row.full_name);
-};
-window.deleteProfile=function(id){
-  if(confirm("Confirmer la suppression ?")){
-    // Offline delete
-    const tx=db.transaction("profiles","readwrite");
-    tx.objectStore("profiles").delete(id);
-    // Online delete
-    supabase.from("profiles").delete().eq("id",id).then(()=>log("🗑️ Profil supprimé online"));
-    profiles=profiles.filter(p=>p.id!=id);
-    renderProfiles();
-  }
-};
-function highlightRow(id){ document.querySelectorAll("#profile-table tr").forEach(tr=>tr.classList.remove("selected")); const tr=document.getElementById("row-"+id); if(tr) tr.classList.add("selected"); }
-function showLoader(show=true){ document.getElementById("loader").style.display=show?"block":"none"; }
-
-// --- CSV ---
-window.exportCSV=function(){
-  const rows=[["Nom","Email","Rôle","Poste","Affectation","Salaire"]].concat(profiles.map(p=>[p.full_name,p.email,p.role,p.poste,p.affectation,p.salaire]));
-  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download="profiles.csv";
-  a.click(); URL.revokeObjectURL(url);
-};
-
-// --- Sort / Filter / Pagination ---
-function sortBy(field){ currentSortField=field; profiles.sort((a,b)=> (a[field]||"").toString().localeCompare((b[field]||"").toString())); renderProfiles(); }
-function getFilteredProfiles(){
-  const search=document.getElementById("search").value.toLowerCase();
-  const role=document.getElementById("filter-role").value.toLowerCase();
-  const poste=document.getElementById("filter-poste").value.toLowerCase();
-  return profiles.filter(p=> (!search||(p.full_name+p.email).toLowerCase().includes(search)) && (!role||p.role?.toLowerCase().includes(role)) && (!poste||p.poste?.toLowerCase().includes(poste)) );
-}
-function paginate(array,page=1,perPage=10){ return array.slice((page-1)*perPage,page*perPage); }
-function renderProfiles(){
-  showLoader(true);
-  setTimeout(()=>{
-    const tbody=document.querySelector("#profile-table tbody");
-    tbody.innerHTML="";
-    const filtered=getFilteredProfiles();
-    const paged=paginate(filtered,currentPage,perPage);
-    paged.forEach(row=>{
-      const tr=document.createElement("tr");
-      tr.id="row-"+row.id;
-      tr.onclick=()=>editProfile(row);
-      tr.innerHTML=`<td>${row.full_name}</td><td>${row.email}</td><td>${row.role}</td><td>${row.poste}</td><td>${row.salaire}</td>
-      <td><button onclick='event.stopPropagation(); editProfile(${JSON.stringify(row)})'>✏️</button>
-      <button onclick='event.stopPropagation(); deleteProfile("${row.id}")'>🗑️</button></td>`;
-      tbody.appendChild(tr);
-    });
-    renderPagination(filtered.length);
-    renderCharts();
-    fillEmployeeSelect();
-    showLoader(false);
-  },100);
-}
-function renderPagination(total){
-  const controls=document.getElementById("pagination-controls");
-  controls.innerHTML="";
-  const totalPages=Math.ceil(total/perPage);
-  for(let i=1;i<=totalPages;i++){
-    const btn=document.createElement("button");
-    btn.innerText=i;
-    if(i===currentPage) btn.style.fontWeight="bold";
-    btn.onclick=()=>{ currentPage=i; renderProfiles(); };
-    controls.appendChild(btn);
-  }
-}
-
-// --- Charts ---
-function renderCharts(){
-  const ctx1=document.getElementById("chartRoles").getContext("2d");
-  const ctx2=document.getElementById("chartPostes").getContext("2d");
-  const roles={}, postes={};
-  profiles.forEach(p=>{ roles[p.role]=(roles[p.role]||0)+1; postes[p.poste]=(postes[p.poste]||0)+1; });
-  if(chartRole) chartRole.destroy();
-  if(chartPoste) chartPoste.destroy();
-  chartRole=new Chart(ctx1,{type:"bar",data:{labels:Object.keys(roles),datasets:[{label:"Par rôle",data:Object.values(roles),backgroundColor:"#007BFF"}]},options:{responsive:true,plugins:{legend:{display:false}}}});
-  chartPoste=new Chart(ctx2,{type:"pie",data:{labels:Object.keys(postes),datasets:[{label:"Par poste",data:Object.values(postes),backgroundColor:["#f44336","#4caf50","#2196f3","#ff9800"]}]} ,options:{responsive:true}});
-}
-
-// --- Load profiles offline/online ---
-function preloadOfflineProfiles(){
-  loadOfflineProfiles(()=>{
-    if(profiles.length===0){
-      // 10 profils test initial offline
-      const initialProfiles=[
-        {id:1, full_name:"Jean Dupont", email:"jean.dupont@mail.com", telephone:"50912345678", role:"Back Office", poste:"Analyste", affectation:"Port-au-Prince", salaire:500, created_at:new Date().toISOString()},
-        {id:2, full_name:"Marie Bernard", email:"marie.bernard@mail.com", telephone:"50923456789", role:"Livreur", poste:"Chauffeur", affectation:"Cap-Haïtien", salaire:0, created_at:new Date().toISOString()},
-        {id:3, full_name:"Pierre Louis", email:"pierre.louis@mail.com", telephone:"50934567890", role:"Back Office", poste:"Comptable", affectation:"Port-au-Prince", salaire:600, created_at:new Date().toISOString()},
-        {id:4, full_name:"Sophie Jean", email:"sophie.jean@mail.com", telephone:"50945678901", role:"Livreur", poste:"Chauffeur", affectation:"Gonaïves", salaire:0, created_at:new Date().toISOString()},
-        {id:5, full_name:"Marc Toussaint", email:"marc.toussaint@mail.com", telephone:"50956789012", role:"Back Office", poste:"Assistant RH", affectation:"Port-au-Prince", salaire:550, created_at:new Date().toISOString()},
-        {id:6, full_name:"Isabelle Michel", email:"isabelle.michel@mail.com", telephone:"50967890123", role:"Livreur", poste:"Chauffeur", affectation:"Jacmel", salaire:0, created_at:new Date().toISOString()},
-        {id:7, full_name:"Louis Charles", email:"louis.charles@mail.com", telephone:"50978901234", role:"Back Office", poste:"Gestionnaire", affectation:"Port-au-Prince", salaire:700, created_at:new Date().toISOString()},
-        {id:8, full_name:"Caroline Pierre", email:"caroline.pierre@mail.com", telephone:"50989012345", role:"Livreur", poste:"Chauffeur", affectation:"Les Cayes", salaire:0, created_at:new Date().toISOString()},
-        {id:9, full_name:"Jean-Paul René", email:"jp.rene@mail.com", telephone:"50990123456", role:"Back Office", poste:"Analyste", affectation:"Port-au-Prince", salaire:500, created_at:new Date().toISOString()},
-        {id:10, full_name:"Emilie François", email:"emilie.francois@mail.com", telephone:"50901234567", role:"Livreur", poste:"Chauffeur", affectation:"Cap-Haïtien", salaire:0, created_at:new Date().toISOString()}
-      ];
-      initialProfiles.forEach(p=>saveOffline(p));
-      profiles=initialProfiles;
-    }
-    renderProfiles();
-  });
-}
-async function loadProfiles(){ preloadOfflineProfiles(); }
-
-// --- Fill filters ---
-function fillEmployeeSelect(){
-  const select=document.getElementById("employee-select");
-  select.innerHTML="";
-  profiles.forEach(p=>{ const opt=document.createElement("option"); opt.value=p.id; opt.text=p.full_name; select.appendChild(opt); });
-}
-
-// --- Payroll ---
-document.getElementById("compute-payroll").onclick=()=>{
-  const sel=document.getElementById("employee-select");
-  const p=profiles.find(x=>x.id==sel.value);
-  if(!p) return alert("Sélectionnez un employé");
-  let total=0;
-  if(p.role==="Livreur"){ const deliveries=parseFloat(document.getElementById("deliveries").value)||0; const rate=parseFloat(document.getElementById("rate").value)||0; total=deliveries*rate; }
-  else total=p.salaire;
-  document.getElementById("payroll-result").innerText="Salaire calculé : "+total;
-};
-document.getElementById("save-payroll").onclick=()=>{
-  const sel=document.getElementById("employee-select");
-  const p=profiles.find(x=>x.id==sel.value);
-  if(!p) return;
-  alert("Payroll enregistré (simulé) pour "+p.full_name);
-};
+let publicProfiles=[];let currentPage=1;const perPage=9;const $=id=>document.getElementById(id);
+async function loadPublicProfiles(){const q=$('searchPublic').value||'';const{data,error}=await supabase.from('profiles').select('id,full_name,poste,role,affectation,created_at').ilike('full_name',`%${q}%`).order('created_at',{ascending:false});if(error){console.error(error);return;}publicProfiles=data||[];renderPublicProfiles();renderChart();}
+function paginateProfiles(page){currentPage=page;renderPublicProfiles();}
+function renderPublicProfiles(){const container=$('profiles-list');container.innerHTML='';const start=(currentPage-1)*perPage;const items=publicProfiles.slice(start,start+perPage);if(items.length===0){container.innerHTML='<div class="small">Aucun profil trouvé.</div>';return;}items.forEach(p=>{const el=document.createElement('div');el.className='card';el.innerHTML=`<strong><i class='lucide-user'></i> ${p.full_name}</strong><div class='small'><i class='lucide-briefcase'></i> ${p.poste||''}</div><div class='small'><i class='lucide-shield'></i> ${p.role||''}</div><div class='small'><i class='lucide-map-pin'></i> ${p.affectation||''}</div>`;container.appendChild(el);});renderPagination();}
+function renderPagination(){const pages=Math.ceil(publicProfiles.length/perPage);const p=$('pagination');p.innerHTML='';for(let i=1;i<=pages;i++){const b=document.createElement('button');b.className='page-btn'+(i===currentPage?' active':'');b.textContent=i;b.onclick=()=>paginateProfiles(i);p.appendChild(b);}}
+function renderChart(){const map={};publicProfiles.forEach(p=>{map[p.role]=(map[p.role]||0)+1;});const labels=Object.keys(map);const values=Object.values(map);const ctx=document.getElementById('chartRoles').getContext('2d');if(window.roleChart)window.roleChart.destroy();window.roleChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Nombre par rôle',data:values,borderWidth:1,backgroundColor:'#0a74da'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});}
+async function sendContact(){const name=$('contactName').value.trim(),email=$('contactEmail').value.trim(),message=$('contactMessage').value.trim();if(!name||!message)return alert('Nom et message requis');const{error}=await supabase.from('contacts').insert([{name,email,message,created_at:new Date().toISOString()}]);if(error){alert('Erreur d\'envoi');}else{alert('Message envoyé !');$('contactForm').reset();}}
+$('open-login').addEventListener('click',()=>{window.location.href='DB_ANBELI.html';});
+window.addEventListener('load',()=>loadPublicProfiles());
 </script>
 </body>
 </html>
